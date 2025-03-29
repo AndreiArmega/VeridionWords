@@ -1,0 +1,13 @@
+{
+  "p1_total_cost": null,
+  "p2_total_cost": null,
+  "p1_word_cost": null,
+  "p2_word_cost": null,
+  "p1_word": null,
+  "p2_word": null,
+  "p1_won": null,
+  "p2_won": null,
+  "system_word": null,
+  "round": null,
+  "game_over": null
+}

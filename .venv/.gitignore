@@ -1,0 +1,14 @@
+# Ignore Python bytecode files
+*.pyc
+__pycache__/
+
+# Ignore virtual environment folder (if you have one)
+.venv/
+venv/
+
+# Ignore PyCharm project files
+.idea/
+
+# Ignore any other files or folders you don't want to track
+# e.g., log files, temp files, etc.
+*.log
