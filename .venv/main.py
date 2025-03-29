@@ -43,7 +43,7 @@ enemy_word_values = []
 mean_enemy_word_value = 0
 persistent_answer = mean_value
 
-used_words = set()  # Set to track used words
+used_words = set()
 
 
 def what_beats(word, status):
@@ -54,7 +54,6 @@ def what_beats(word, status):
         p1_total_cost = status.get('p1_total_cost', 0)
         p2_total_cost = status.get('p2_total_cost', 0)
         p1_word = status.get('p1_word', "")
-
         p2_word = status.get('p2_word', "")
         sum_to_victory = p1_total_cost - p2_total_cost
 
@@ -62,8 +61,12 @@ def what_beats(word, status):
             (item["value"] for item in word_value_dict.values() if item["word"] == p2_word),
             None
         )
-        if enemy_word_cost is not None:
-            enemy_word_values.append(enemy_word_cost)
+
+        if enemy_word_cost is None:
+            print("No valid enemy word cost found for:", p2_word)
+            return None
+
+        enemy_word_values.append(enemy_word_cost)
 
         if enemy_word_values:
             mean_enemy_word_value = sum(enemy_word_values) / len(enemy_word_values)
@@ -75,16 +78,24 @@ def what_beats(word, status):
             persistent_answer = mean_value
             best_match_id = min(word_value_dict.keys(), key=lambda wid: abs(word_value_dict[wid]["value"] - mean_value))
         else:
-            if sum_to_victory > 0 and round_num < NUM_ROUNDS:
-                persistent_answer -= sum_to_victory / (NUM_ROUNDS - round_num)
+
+            if p1_total_cost == 0:
+                adjustment_factor = 1
             else:
-                persistent_answer += -sum_to_victory - (-round_num + (NUM_ROUNDS + 1))
+                if sum_to_victory < 0:
+                    adjustment_factor = 5 + (-sum_to_victory / p1_total_cost)
+
+                    if NUM_ROUNDS - round_num > 0:
+                        persistent_answer -= (-sum_to_victory / (NUM_ROUNDS - round_num)) * adjustment_factor
+                else:
+                    adjustment_factor = 3.0
+                    persistent_answer += sum_to_victory - (-round_num + (NUM_ROUNDS + 1)) * adjustment_factor
+
 
             non_abstract_values = [
                 item["value"] for item in word_value_dict.values()
                 if item["word"] not in abstract
             ]
-
             if non_abstract_values:
                 min_non_abstract = min(non_abstract_values)
             else:
@@ -94,17 +105,23 @@ def what_beats(word, status):
 
             persistent_answer = max(dynamic_lower_bound, int(persistent_answer))
 
-    available_word_ids = [wid for wid in word_value_dict.keys() if word_value_dict[wid]["word"] not in used_words]
+    available_word_ids = [wid for wid in word_value_dict.keys()
+                          if word_value_dict[wid]["word"] not in used_words and word_value_dict[wid]["word"].lower() not in lowercase_blacklist]
 
     if not available_word_ids:
         print("No available words left!")
         return None
 
-    best_match_id = min(available_word_ids, key=lambda wid: abs(word_value_dict[wid]["value"] - persistent_answer))
+    try:
+        best_match_id = min(available_word_ids, key=lambda wid: abs(word_value_dict[wid]["value"] - persistent_answer))
+    except ValueError:
+        print("Error: No valid best match found!")
+        return None
 
     used_words.add(word_value_dict[best_match_id]["word"])
 
     return int(best_match_id)
+
 
 
 def play_game(player_id):
